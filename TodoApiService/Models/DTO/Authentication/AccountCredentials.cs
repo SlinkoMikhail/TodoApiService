@@ -9,5 +9,7 @@ namespace TodoApiService.Models.DTO.Authentication
         [Required]
         [MinLength(6)]
         public string Password { get; set; }
+        [Required]
+        public string Phone { get; set; }
     }
 }
