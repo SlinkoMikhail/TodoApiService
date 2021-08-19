@@ -10,12 +10,12 @@ namespace TodoApiService.Controllers
     public class AuthenticationController : ControllerBase
     {
         [Route("register")]
-        public IActionResult Register(AccountCredentials accountCredentials)
+        public IActionResult Register(RegisterAccountCredentials accountCredentials)
         {
             throw new NotImplementedException();
         }
         [Route("login")]
-        public async Task<IActionResult> Login(AccountCredentials accountCredentials)
+        public async Task<IActionResult> Login(LoginAccountCredentials accountCredentials)
         {
             throw new NotImplementedException();
         }

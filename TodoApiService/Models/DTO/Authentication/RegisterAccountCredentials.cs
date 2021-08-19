@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace TodoApiService.Models.DTO.Authentication
 {
-    public class AccountCredentials
+    public class RegisterAccountCredentials
     {
         [Required]
         public string Email { get; set; }
