@@ -9,6 +9,7 @@ namespace TodoApiService.Controllers
     [Route("api/authentication")]
     public class AuthenticationController : ControllerBase
     {
+        [HttpPost]
         [Route("register")]
         public IActionResult Register(RegisterAccountCredentials registerCredentials)
         {
@@ -16,11 +17,13 @@ namespace TodoApiService.Controllers
             //_IAccountManager.Register(registerCredentials);
             throw new NotImplementedException();
         }
+        [HttpPost]
         [Route("login")]
         public async Task<IActionResult> Login(LoginAccountCredentials loginCredentials)
         {
             throw new NotImplementedException();
         }
+        [HttpPost]
         [Route("refresh")]
         public async Task<IActionResult> Refresh(string refreshToken)
         {

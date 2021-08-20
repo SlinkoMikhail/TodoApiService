@@ -6,5 +6,6 @@ namespace TodoApiService.Models
     {
         bool RegisterAccount(RegisterAccountCredentials registerCredentials);
         TokenResult LoginAccount(LoginAccountCredentials loginCredentials);
+        TokenResult GenerateJWTTokens(Account account);
     }
 }
