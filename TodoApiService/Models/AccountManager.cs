@@ -1,5 +1,6 @@
 using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -59,7 +60,19 @@ namespace TodoApiService.Models
 
         public bool RegisterAccount(RegisterAccountCredentials registerCredentials)
         {
-            throw new System.NotImplementedException();
+            Account user = _appDbContext.Accounts
+                .FirstOrDefault(a => a.Email == registerCredentials.Email || a.Phone == registerCredentials.Phone);
+            if(user != null) return false;
+            user = new Account
+            {
+                Email = registerCredentials.Email,
+                Phone = registerCredentials.Phone,
+                HashPassword = registerCredentials.Password,
+                Role = Roles.User
+            };
+            _appDbContext.Accounts.Add(user);
+            _appDbContext.SaveChanges();
+            return true;
         }
     }
 }
