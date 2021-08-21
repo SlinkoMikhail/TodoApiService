@@ -55,10 +55,10 @@ namespace TodoApiService
             
                         ValidateLifetime = true,
                         
-                        ClockSkew = jwtAuthOptions.ClockSkew
+                        ClockSkew = TimeSpan.Zero//jwtAuthOptions.ClockSkew
                     };
                 });
-
+            services.AddTransient<IAccountManager, AccountManager>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

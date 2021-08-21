@@ -19,6 +19,7 @@ namespace TodoApiService.Models
         }
         public TokenResult GenerateJWTTokens(Account account)
         {
+            //access_token
             TokenResult tokenResult = new TokenResult();
             JwtSecurityTokenHandler jwtTokenHandler = new JwtSecurityTokenHandler();
             SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
@@ -36,6 +37,19 @@ namespace TodoApiService.Models
             };
             SecurityToken token = jwtTokenHandler.CreateToken(tokenDescriptor);
             tokenResult.AccessToken = jwtTokenHandler.WriteToken(token);
+            //refresh_token 
+            RefreshToken refreshToken = new RefreshToken
+            {
+                Token = Guid.NewGuid().ToString(),
+                IsRevoked = false,
+                IsUsed = false,
+                AddedDate = DateTime.UtcNow,
+                ExpiryDate = DateTime.UtcNow.AddMonths(6),
+                Account = account,
+                AccountId = account.Id
+            };
+            tokenResult.RefreshToken = refreshToken.Token;
+            return tokenResult;
         }
 
         public TokenResult LoginAccount(LoginAccountCredentials loginCredentials)

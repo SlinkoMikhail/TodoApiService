@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TodoApiService", "TodoApiService\TodoApiService.csproj", "{20FA32E8-07D7-4DEB-B8AB-93DA93532EE8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TodoApiService.Tests", "TodoApiService.Tests\TodoApiService.Tests.csproj", "{818C4C73-F192-4D0F-945D-135DA5E52984}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,17 @@ Global
 		{20FA32E8-07D7-4DEB-B8AB-93DA93532EE8}.Release|x64.Build.0 = Release|Any CPU
 		{20FA32E8-07D7-4DEB-B8AB-93DA93532EE8}.Release|x86.ActiveCfg = Release|Any CPU
 		{20FA32E8-07D7-4DEB-B8AB-93DA93532EE8}.Release|x86.Build.0 = Release|Any CPU
+		{818C4C73-F192-4D0F-945D-135DA5E52984}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{818C4C73-F192-4D0F-945D-135DA5E52984}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{818C4C73-F192-4D0F-945D-135DA5E52984}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{818C4C73-F192-4D0F-945D-135DA5E52984}.Debug|x64.Build.0 = Debug|Any CPU
+		{818C4C73-F192-4D0F-945D-135DA5E52984}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{818C4C73-F192-4D0F-945D-135DA5E52984}.Debug|x86.Build.0 = Debug|Any CPU
+		{818C4C73-F192-4D0F-945D-135DA5E52984}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{818C4C73-F192-4D0F-945D-135DA5E52984}.Release|Any CPU.Build.0 = Release|Any CPU
+		{818C4C73-F192-4D0F-945D-135DA5E52984}.Release|x64.ActiveCfg = Release|Any CPU
+		{818C4C73-F192-4D0F-945D-135DA5E52984}.Release|x64.Build.0 = Release|Any CPU
+		{818C4C73-F192-4D0F-945D-135DA5E52984}.Release|x86.ActiveCfg = Release|Any CPU
+		{818C4C73-F192-4D0F-945D-135DA5E52984}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
