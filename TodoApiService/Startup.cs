@@ -1,11 +1,7 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,7 +26,8 @@ namespace TodoApiService
                 options.UseSqlServer(Configuration.GetConnectionString("TodoApiApplicationDb"));
             });
 
-            services.Configure<JWTAuthOptions>(Configuration.GetSection("JWTAuth"));
+            var jwtConfig = Configuration.GetSection("JWTAuthOptions");
+            services.Configure<JWTAuthOptions>(jwtConfig);
 
             services.AddAuthentication(options =>
             {
@@ -41,7 +38,7 @@ namespace TodoApiService
                 .AddJwtBearer(jwt =>
                 {
                     jwt.SaveToken = true;
-                    JWTAuthOptions jwtAuthOptions = Configuration.Get<JWTAuthOptions>();
+                    JWTAuthOptions jwtAuthOptions = jwtConfig.Get<JWTAuthOptions>();
                     jwt.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
                     {
                         ValidateIssuer = true,
