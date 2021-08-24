@@ -5,7 +5,7 @@ namespace TodoApiService.Models
     public interface IAccountManager
     {
         bool RegisterAccount(RegisterAccountCredentials registerCredentials);
-        TokenResult LoginAccount(LoginAccountCredentials loginCredentials);
+        Account LoginAccount(LoginAccountCredentials loginCredentials);
         TokenResult GenerateJWTTokens(Account account);
     }
 }

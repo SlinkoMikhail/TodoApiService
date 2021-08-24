@@ -53,9 +53,12 @@ namespace TodoApiService.Models
             return tokenResult;
         }
 
-        public TokenResult LoginAccount(LoginAccountCredentials loginCredentials)
+        public Account LoginAccount(LoginAccountCredentials loginCredentials)
         {
-            throw new System.NotImplementedException();
+            Account user = _appDbContext.Accounts.FirstOrDefault(a => 
+                (loginCredentials.EmailOrPhone == a.Email || loginCredentials.EmailOrPhone == a.Phone) 
+                && a.HashPassword == loginCredentials.Password);
+            return user;
         }
 
         public bool RegisterAccount(RegisterAccountCredentials registerCredentials)
