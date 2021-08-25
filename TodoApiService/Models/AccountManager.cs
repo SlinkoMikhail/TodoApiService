@@ -49,6 +49,23 @@ namespace TodoApiService.Models
                 Account = account,
                 AccountId = account.Id
             };
+            RefreshToken refreshTokenStored = _appDbContext.RefreshTokens.FirstOrDefault(t => t.AccountId == refreshToken.AccountId);
+            if(refreshTokenStored == null)
+            { 
+                _appDbContext.RefreshTokens.Add(refreshToken);
+            }
+            else
+            {
+                refreshTokenStored.Account = refreshToken.Account;
+                refreshTokenStored.AccountId = refreshToken.AccountId;
+                refreshTokenStored.AddedDate = refreshToken.AddedDate;
+                refreshTokenStored.ExpiryDate = refreshToken.ExpiryDate;
+                refreshTokenStored.IsRevoked = refreshToken.IsRevoked;
+                refreshTokenStored.IsUsed = refreshToken.IsUsed;
+                refreshTokenStored.Token = refreshToken.Token;
+                _appDbContext.RefreshTokens.Update(refreshTokenStored);
+            }
+            _appDbContext.SaveChanges();
             tokenResult.RefreshToken = refreshToken.Token;
             return tokenResult;
         }
@@ -59,6 +76,20 @@ namespace TodoApiService.Models
                 (loginCredentials.EmailOrPhone == a.Email || loginCredentials.EmailOrPhone == a.Phone) 
                 && a.HashPassword == loginCredentials.Password);
             return user;
+        }
+
+        public TokenResult RefreshJWTTokens(string refreshToken)
+        {
+            RefreshToken refresh = _appDbContext.RefreshTokens.FirstOrDefault(t => t.Token == refreshToken);
+            if(refresh != null && refresh.ExpiryDate > DateTime.UtcNow && refresh.IsRevoked == false && refresh.IsUsed == false)
+            {
+                refresh.IsUsed = true;
+                Account user = _appDbContext.Accounts.Find(refresh.AccountId);
+                TokenResult tokenResult = this.GenerateJWTTokens(user);
+                if(tokenResult != null)
+                    return tokenResult;
+            }
+            return null;
         }
 
         public bool RegisterAccount(RegisterAccountCredentials registerCredentials)
