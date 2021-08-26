@@ -2,6 +2,7 @@ using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using TodoApiService.Models.DTO.Authentication;
@@ -18,7 +19,7 @@ namespace TodoApiService.Models
             _jwtAuthOptions = jwtAuthOptions.Value;
             _appDbContext = appDbContext;
         }
-        public TokenResult GenerateJWTTokens(Account account)
+        private async Task<TokenResult> GenerateJWTTokens(Account account)
         {
             //access_token
             TokenResult tokenResult = new TokenResult();
@@ -29,9 +30,7 @@ namespace TodoApiService.Models
                 {
                     new Claim(JwtRegisteredClaimNames.Sub, account.Id.ToString()),
                     new Claim(JwtRegisteredClaimNames.Iss, _jwtAuthOptions.Issuer),
-                    new Claim(JwtRegisteredClaimNames.Aud, _jwtAuthOptions.Audience),
-                    new Claim(JwtRegisteredClaimNames.Email, account.Email?.ToString()),
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                    new Claim(JwtRegisteredClaimNames.Aud, _jwtAuthOptions.Audience)
                 }), 
                 Expires = DateTime.UtcNow.AddSeconds(_jwtAuthOptions.TokenLifeTime),
                 SigningCredentials = new SigningCredentials(_jwtAuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256)
@@ -49,15 +48,13 @@ namespace TodoApiService.Models
                 Account = account,
                 AccountId = account.Id
             };
-            RefreshToken refreshTokenStored = _appDbContext.RefreshTokens.FirstOrDefault(t => t.AccountId == refreshToken.AccountId);
+            RefreshToken refreshTokenStored = _appDbContext.RefreshTokens.FirstOrDefault(t => t.AccountId == account.Id);
             if(refreshTokenStored == null)
-            { 
-                _appDbContext.RefreshTokens.Add(refreshToken);
+            {
+                await _appDbContext.RefreshTokens.AddAsync(refreshToken);
             }
             else
             {
-                refreshTokenStored.Account = refreshToken.Account;
-                refreshTokenStored.AccountId = refreshToken.AccountId;
                 refreshTokenStored.AddedDate = refreshToken.AddedDate;
                 refreshTokenStored.ExpiryDate = refreshToken.ExpiryDate;
                 refreshTokenStored.IsRevoked = refreshToken.IsRevoked;
@@ -65,34 +62,34 @@ namespace TodoApiService.Models
                 refreshTokenStored.Token = refreshToken.Token;
                 _appDbContext.RefreshTokens.Update(refreshTokenStored);
             }
-            _appDbContext.SaveChanges();
+            await _appDbContext.SaveChangesAsync();
             tokenResult.RefreshToken = refreshToken.Token;
             return tokenResult;
         }
 
-        public Account LoginAccount(LoginAccountCredentials loginCredentials)
+        public async Task<TokenResult> LoginAccount(LoginAccountCredentials loginCredentials)
         {
             Account user = _appDbContext.Accounts.FirstOrDefault(a => 
                 (loginCredentials.EmailOrPhone == a.Email || loginCredentials.EmailOrPhone == a.Phone) 
                 && a.HashPassword == loginCredentials.Password);
-            return user;
+            if(user == null) return null;
+            return await GenerateJWTTokens(user);
         }
-
-        public TokenResult RefreshJWTTokens(string refreshToken)
+        public async Task<TokenResult> RefreshJWTTokens(string refreshToken)
         {
             RefreshToken refresh = _appDbContext.RefreshTokens.FirstOrDefault(t => t.Token == refreshToken);
             if(refresh != null && refresh.ExpiryDate > DateTime.UtcNow && refresh.IsRevoked == false && refresh.IsUsed == false)
             {
                 refresh.IsUsed = true;
-                Account user = _appDbContext.Accounts.Find(refresh.AccountId);
-                TokenResult tokenResult = this.GenerateJWTTokens(user);
+                Account user = await _appDbContext.Accounts.FindAsync(refresh.AccountId);
+                TokenResult tokenResult = await this.GenerateJWTTokens(user);
                 if(tokenResult != null)
                     return tokenResult;
             }
             return null;
         }
 
-        public bool RegisterAccount(RegisterAccountCredentials registerCredentials)
+        public async Task<bool> RegisterAccount(RegisterAccountCredentials registerCredentials)
         {
             Account user = _appDbContext.Accounts
                 .FirstOrDefault(a => a.Email == registerCredentials.Email || a.Phone == registerCredentials.Phone);
@@ -104,8 +101,8 @@ namespace TodoApiService.Models
                 HashPassword = registerCredentials.Password,
                 Role = Roles.User
             };
-            _appDbContext.Accounts.Add(user);
-            _appDbContext.SaveChanges();
+            await _appDbContext.Accounts.AddAsync(user);
+            await _appDbContext.SaveChangesAsync();
             return true;
         }
     }

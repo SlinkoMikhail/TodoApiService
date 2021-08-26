@@ -16,10 +16,10 @@ namespace TodoApiService.Controllers
         }
         [HttpPost]
         [Route("register")]
-        public IActionResult Register(RegisterAccountCredentials registerCredentials)
+        public async Task<IActionResult> Register(RegisterAccountCredentials registerCredentials)
         {
             if(!ModelState.IsValid) return BadRequest();
-            if(_accountManager.RegisterAccount(registerCredentials))
+            if(await _accountManager.RegisterAccount(registerCredentials))
                 return Ok();
             return BadRequest();
         }
@@ -27,9 +27,7 @@ namespace TodoApiService.Controllers
         [Route("login")]
         public async Task<IActionResult> Login(LoginAccountCredentials loginCredentials)
         {
-            Account user = _accountManager.LoginAccount(loginCredentials);
-            if(user == null) return BadRequest();
-            TokenResult result = _accountManager.GenerateJWTTokens(user);
+            TokenResult result = await _accountManager.LoginAccount(loginCredentials);
             if(result != null)
                 return Ok(result);
             return BadRequest();
@@ -38,7 +36,7 @@ namespace TodoApiService.Controllers
         [Route("refresh")]
         public async Task<IActionResult> Refresh(TokenRequest token)
         {
-            TokenResult result = _accountManager.RefreshJWTTokens(token.RefreshToken);
+            TokenResult result = await _accountManager.RefreshJWTTokens(token.RefreshToken);
             if(result == null) return BadRequest();
             return Ok(result);
         }

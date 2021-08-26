@@ -1,12 +1,12 @@
+using System.Threading.Tasks;
 using TodoApiService.Models.DTO.Authentication;
 
 namespace TodoApiService.Models
 {
     public interface IAccountManager
     {
-        bool RegisterAccount(RegisterAccountCredentials registerCredentials);
-        Account LoginAccount(LoginAccountCredentials loginCredentials);
-        TokenResult GenerateJWTTokens(Account account);
-        TokenResult RefreshJWTTokens(string refreshToken);
+        Task<bool> RegisterAccount(RegisterAccountCredentials registerCredentials);
+        Task<TokenResult> LoginAccount(LoginAccountCredentials loginCredentials);
+        Task<TokenResult> RefreshJWTTokens(string refreshToken);
     }
 }
