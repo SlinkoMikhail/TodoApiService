@@ -66,7 +66,7 @@ namespace TodoApiService.Models
             tokenResult.RefreshToken = refreshToken.Token;
             return tokenResult;
         }
-
+        public async Task<Account> GetAccountByIdAsync(Guid id) => await _appDbContext.Accounts.FindAsync(id);
         public async Task<TokenResult> LoginAccount(LoginAccountCredentials loginCredentials)
         {
             Account user = _appDbContext.Accounts.FirstOrDefault(a => 
@@ -105,5 +105,7 @@ namespace TodoApiService.Models
             await _appDbContext.SaveChangesAsync();
             return true;
         }
+
+        public Account GetAccountById(Guid id) => _appDbContext.Accounts.Find(id);
     }
 }

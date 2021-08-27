@@ -4,17 +4,24 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TodoApiService.Models;
+using TodoApiService.Extensions;
+using System.Linq;
 
 namespace TodoApiService.Controllers
 {
     [ApiController]
     [Route("api/todoitems")]
-    //[Authorize]
+    [Authorize]
     public class TodoItemsController : ControllerBase
     {
+        private readonly IAccountManager _accountManager;
+        public TodoItemsController(IAccountManager accountManager)
+        {
+            _accountManager = accountManager;   
+        }
         //GET all items
         [HttpGet]
-        public IAsyncEnumerable<TodoItem> GetTodoItems()
+        public async Task<IActionResult> GetTodoItems()
         {
             throw new NotImplementedException();
         }
@@ -35,6 +42,12 @@ namespace TodoApiService.Controllers
         public async Task DeleteTodoItem(Guid id)
         {
             throw new NotImplementedException();
+        }
+
+        [NonAction]
+        private async Task<Account> GetAuthenticatedUser()
+        {
+            return await _accountManager.GetAccountByIdAsync(User.GetUserId());
         }
     }
 }
