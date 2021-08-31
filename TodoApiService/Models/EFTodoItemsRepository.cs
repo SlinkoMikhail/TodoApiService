@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace TodoApiService.Models
 {
@@ -12,38 +14,40 @@ namespace TodoApiService.Models
             _appDbContext = appDbContext;
         }
 
-        public void AddTodoItem(Guid userId, TodoItem item)
+        public async Task<bool> AddTodoItem(Guid userId, TodoItem item)
         {
             if(item.AccountId == userId)
             {
-                _appDbContext.TodoItems.Add(item);
-                _appDbContext.SaveChanges();
+                await _appDbContext.TodoItems.AddAsync(item);
+                await _appDbContext.SaveChangesAsync();
+                return true;
             }
+            return false;
         }
 
-        public void DeleteTodoItem(Guid userId, long todoItemId)
+        public async Task DeleteTodoItem(Guid userId, long todoItemId)
         {
-            TodoItem item = _appDbContext.TodoItems.Find(todoItemId);
+            TodoItem item = await _appDbContext.TodoItems.FindAsync(todoItemId);
             if(item?.AccountId == userId)
             {
                 _appDbContext.TodoItems.Remove(item);
-                _appDbContext.SaveChanges();
+                await _appDbContext.SaveChangesAsync();
             }
         }
 
-        public IEnumerable<TodoItem> GetAll(Guid id)
+        public IAsyncEnumerable<TodoItem> GetAll(Guid id)
         {
-            return _appDbContext.TodoItems.Where(tdi => tdi.AccountId == id).AsEnumerable();
+            return _appDbContext.TodoItems.Where(tdi => tdi.AccountId == id).AsAsyncEnumerable();
         }
 
-        public void UpdateTodoItems(Guid userId, TodoItem newItem)
+        public async Task UpdateTodoItems(Guid userId, TodoItem newItem)
         {
-            TodoItem storedItem = _appDbContext.TodoItems.FirstOrDefault(tdi => tdi.Id == newItem.Id && tdi.AccountId == userId);
+            TodoItem storedItem = await _appDbContext.TodoItems.FirstOrDefaultAsync(tdi => tdi.Id == newItem.Id && tdi.AccountId == userId);
             if(storedItem != null)
             {
                 storedItem.IsComplete = newItem.IsComplete;
                 storedItem.IsImportant = newItem.IsImportant;
-                _appDbContext.SaveChanges();
+                await _appDbContext.SaveChangesAsync();
             }
         }
     }

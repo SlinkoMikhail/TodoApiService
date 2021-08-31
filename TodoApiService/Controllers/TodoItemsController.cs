@@ -21,31 +21,32 @@ namespace TodoApiService.Controllers
         }
         //GET all items
         [HttpGet]
-        public async Task<IActionResult> GetTodoItems()
+        public IAsyncEnumerable<TodoItem> GetTodoItems()
         {
-            
-            return Ok(_todoItemsRepository.GetAll(User.GetUserId()));
+            return _todoItemsRepository.GetAll(User.GetUserId());
         }
         //POST(TodoItem) add(TodoItems)
         [HttpPost]
         public async Task<IActionResult> AddTodoItem(TodoItem todoItem)
         {
-            _todoItemsRepository.AddTodoItem(User.GetUserId(), todoItem);
-            return Ok();
+            bool success = await _todoItemsRepository.AddTodoItem(User.GetUserId(), todoItem);
+            if(success)
+                return Ok();
+            return BadRequest();
         }
         //UPDATE(arr TodoIems)
         [HttpPut]
         public async Task<IActionResult> UpdateTodoItems(TodoItem todoItem)
         {
-            _todoItemsRepository.UpdateTodoItems(User.GetUserId(), todoItem);
-            return Ok();
+            await _todoItemsRepository.UpdateTodoItems(User.GetUserId(), todoItem);
+            return NoContent();
         }
         //DELETE(id) remove(id)
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteTodoItem(long id)
+        [HttpDelete("{todoItemId}")]
+        public async Task<IActionResult> DeleteTodoItem(long todoItemId)
         {
-            _todoItemsRepository.DeleteTodoItem(User.GetUserId(), id);
-            return Ok();
+            await _todoItemsRepository.DeleteTodoItem(User.GetUserId(), todoItemId);
+            return NoContent();
         }
     }
 }

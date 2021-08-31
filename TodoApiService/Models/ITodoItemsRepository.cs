@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace TodoApiService.Models
 {
     public interface ITodoItemsRepository
     {
-        IEnumerable<TodoItem> GetAll(Guid userId);
-        void AddTodoItem(Guid userId, TodoItem item);
-        void DeleteTodoItem(Guid userId, long todoItemId);
-        void UpdateTodoItems(Guid userId, TodoItem newItem);
+        IAsyncEnumerable<TodoItem> GetAll(Guid userId);
+        Task<bool> AddTodoItem(Guid userId, TodoItem item);
+        Task DeleteTodoItem(Guid userId, long todoItemId);
+        Task UpdateTodoItems(Guid userId, TodoItem newItem);
     }
 }
