@@ -1,11 +1,10 @@
-using System;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using TodoApiService.Extensions;
 using TodoApiService.Models;
 using TodoApiService.Models.Options;
 
@@ -29,32 +28,7 @@ namespace TodoApiService
             var jwtConfig = Configuration.GetSection("JWTAuthOptions");
             services.Configure<JWTAuthOptions>(jwtConfig);
 
-            services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-                .AddJwtBearer(jwt =>
-                {
-                    jwt.SaveToken = true;
-                    JWTAuthOptions jwtAuthOptions = jwtConfig.Get<JWTAuthOptions>();
-                    jwt.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
-                    {
-                        ValidateIssuer = true,
-                        ValidIssuer = jwtAuthOptions.Issuer,
-
-                        ValidateAudience = true,
-                        ValidAudience = jwtAuthOptions.Audience,
-
-                        ValidateIssuerSigningKey = true,
-                        IssuerSigningKey = jwtAuthOptions.GetSymmetricSecurityKey(),
-            
-                        ValidateLifetime = true,
-                        
-                        ClockSkew = TimeSpan.Zero//jwtAuthOptions.ClockSkew
-                    };
-                });
+            services.AddJWTAuthentication(jwtConfig.Get<JWTAuthOptions>());
             services.AddTransient<IAccountManager, AccountManager>();
             services.AddTransient<ITodoItemsRepository, EFTodoItemsRepository>();
         }
