@@ -56,6 +56,7 @@ namespace TodoApiService
                     };
                 });
             services.AddTransient<IAccountManager, AccountManager>();
+            services.AddTransient<ITodoItemsRepository, EFTodoItemsRepository>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

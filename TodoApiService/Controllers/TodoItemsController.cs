@@ -14,40 +14,38 @@ namespace TodoApiService.Controllers
     [Authorize]
     public class TodoItemsController : ControllerBase
     {
-        private readonly IAccountManager _accountManager;
-        public TodoItemsController(IAccountManager accountManager)
+        private readonly ITodoItemsRepository _todoItemsRepository;
+        public TodoItemsController(ITodoItemsRepository todoItemsRepository)
         {
-            _accountManager = accountManager;   
+            _todoItemsRepository = todoItemsRepository;
         }
         //GET all items
         [HttpGet]
         public async Task<IActionResult> GetTodoItems()
         {
-            throw new NotImplementedException();
+            
+            return Ok(_todoItemsRepository.GetAll(User.GetUserId()));
         }
         //POST(TodoItem) add(TodoItems)
         [HttpPost]
         public async Task<IActionResult> AddTodoItem(TodoItem todoItem)
         {
-            throw new NotImplementedException();
+            _todoItemsRepository.AddTodoItem(User.GetUserId(), todoItem);
+            return Ok();
         }
         //UPDATE(arr TodoIems)
         [HttpPut]
-        public async Task<IActionResult> UpdateTodoItems(TodoItem[] todoItems)
+        public async Task<IActionResult> UpdateTodoItems(TodoItem todoItem)
         {
-            throw new NotImplementedException();
+            _todoItemsRepository.UpdateTodoItems(User.GetUserId(), todoItem);
+            return Ok();
         }
         //DELETE(id) remove(id)
         [HttpDelete("{id}")]
-        public async Task DeleteTodoItem(Guid id)
+        public async Task<IActionResult> DeleteTodoItem(long id)
         {
-            throw new NotImplementedException();
-        }
-
-        [NonAction]
-        private async Task<Account> GetAuthenticatedUser()
-        {
-            return await _accountManager.GetAccountByIdAsync(User.GetUserId());
+            _todoItemsRepository.DeleteTodoItem(User.GetUserId(), id);
+            return Ok();
         }
     }
 }

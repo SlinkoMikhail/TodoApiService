@@ -7,6 +7,7 @@ namespace TodoApiService.Models
         public TodoApiApplicationContext(DbContextOptions<TodoApiApplicationContext> options) : base(options){}
         public DbSet<Account> Accounts { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<TodoItem> TodoItems { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Account>()

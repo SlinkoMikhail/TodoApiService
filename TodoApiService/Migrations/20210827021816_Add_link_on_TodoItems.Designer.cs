@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TodoApiService.Models;
 
 namespace TodoApiService.Migrations
 {
     [DbContext(typeof(TodoApiApplicationContext))]
-    partial class TodoApiApplicationContextModelSnapshot : ModelSnapshot
+    [Migration("20210827021816_Add_link_on_TodoItems")]
+    partial class Add_link_on_TodoItems
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
