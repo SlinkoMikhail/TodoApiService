@@ -1,11 +1,12 @@
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TodoApiService.Models;
 using TodoApiService.Extensions;
-using System.Linq;
+using TodoApiService.Models.DTO;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 namespace TodoApiService.Controllers
 {
@@ -15,9 +16,11 @@ namespace TodoApiService.Controllers
     public class TodoItemsController : ControllerBase
     {
         private readonly ITodoItemsRepository _todoItemsRepository;
-        public TodoItemsController(ITodoItemsRepository todoItemsRepository)
+        private readonly ILogger<TodoItemsController> _logger;
+        public TodoItemsController(ITodoItemsRepository todoItemsRepository, ILogger<TodoItemsController> logger)
         {
             _todoItemsRepository = todoItemsRepository;
+            _logger = logger;
         }
         //GET all items
         [HttpGet]
@@ -27,25 +30,48 @@ namespace TodoApiService.Controllers
         }
         //POST(TodoItem) add(TodoItems)
         [HttpPost]
-        public async Task<IActionResult> AddTodoItem(TodoItem todoItem)
+        public async Task<IActionResult> AddTodoItem(CreateTodoItem createTodoItem)
         {
-            bool success = await _todoItemsRepository.AddTodoItem(User.GetUserId(), todoItem);
-            if(success)
-                return Ok();
-            return BadRequest();
+            try
+            {
+                await _todoItemsRepository.AddTodoItem(User.GetUserId(), createTodoItem);
+                return StatusCode(StatusCodes.Status201Created);
+            }
+            catch (System.Exception ex)
+            {
+                //логануть и отправить ответ
+                string message = "usefull message";
+                _logger.LogWarning(ex, message);
+                return BadRequest(ex.Message);
+            }
         }
         //UPDATE(arr TodoIems)
         [HttpPut]
-        public async Task<IActionResult> UpdateTodoItems(TodoItem todoItem)
+        public async Task<IActionResult> UpdateTodoItems(EditTodoItem todoItem)
         {
-            await _todoItemsRepository.UpdateTodoItems(User.GetUserId(), todoItem);
-            return NoContent();
+            try
+            {
+                await _todoItemsRepository.UpdateTodoItems(User.GetUserId(), todoItem);             
+                return NoContent();
+            }
+            catch (System.Exception ex)
+            {
+                //логануть эксепшен
+                return BadRequest(ex.Message);
+            }
         }
         //DELETE(id) remove(id)
         [HttpDelete("{todoItemId}")]
         public async Task<IActionResult> DeleteTodoItem(long todoItemId)
         {
-            await _todoItemsRepository.DeleteTodoItem(User.GetUserId(), todoItemId);
+            try
+            {
+                await _todoItemsRepository.DeleteTodoItem(User.GetUserId(), todoItemId);
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogWarning(ex, "");
+            }
             return NoContent();
         }
     }

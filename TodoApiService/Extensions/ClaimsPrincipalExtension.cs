@@ -1,6 +1,6 @@
 using System;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using TodoApiService.Models;
 
 namespace TodoApiService.Extensions
 {
@@ -8,7 +8,7 @@ namespace TodoApiService.Extensions
     {
         public static Guid GetUserId(this ClaimsPrincipal claimsPrincipal)
         {
-            string guid = claimsPrincipal.FindFirstValue("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");//??
+            string guid = claimsPrincipal.FindFirstValue(ClaimNames.UniqueId);
             return Guid.TryParse(guid, out var id) ? id : Guid.Empty;
         }
     }
