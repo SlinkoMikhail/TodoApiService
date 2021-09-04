@@ -23,20 +23,19 @@ namespace TodoApiService.Models
         {
             //access_token
             TokenResult tokenResult = new TokenResult();
-            JwtSecurityTokenHandler jwtTokenHandler = new JwtSecurityTokenHandler();
-            SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
+            Claim[] claims = new[]
             {
-                Subject = new ClaimsIdentity(new []
-                {
-                    new Claim(JwtRegisteredClaimNames.Sub, account.Id.ToString()),
-                    new Claim(JwtRegisteredClaimNames.Iss, _jwtAuthOptions.Issuer),
-                    new Claim(JwtRegisteredClaimNames.Aud, _jwtAuthOptions.Audience)
-                }), 
-                Expires = DateTime.UtcNow.AddSeconds(_jwtAuthOptions.TokenLifeTime),
-                SigningCredentials = new SigningCredentials(_jwtAuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256)
+                new Claim(ClaimNames.UniqueId, account.Id.ToString())
             };
-            SecurityToken token = jwtTokenHandler.CreateToken(tokenDescriptor);
-            tokenResult.AccessToken = jwtTokenHandler.WriteToken(token);
+            var signingCredentials = new SigningCredentials(_jwtAuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256);
+            var token = new JwtSecurityToken(
+                issuer: _jwtAuthOptions.Issuer,
+                claims: claims,
+                audience: _jwtAuthOptions.Audience,
+                expires: DateTime.UtcNow.AddSeconds(_jwtAuthOptions.TokenLifeTime),
+                signingCredentials: signingCredentials
+            );
+            tokenResult.AccessToken = new JwtSecurityTokenHandler().WriteToken(token);
             //refresh_token 
             RefreshToken refreshToken = new RefreshToken
             {
@@ -60,7 +59,6 @@ namespace TodoApiService.Models
                 refreshTokenStored.IsRevoked = refreshToken.IsRevoked;
                 refreshTokenStored.IsUsed = refreshToken.IsUsed;
                 refreshTokenStored.Token = refreshToken.Token;
-                _appDbContext.RefreshTokens.Update(refreshTokenStored);
             }
             await _appDbContext.SaveChangesAsync();
             tokenResult.RefreshToken = refreshToken.Token;
@@ -70,9 +68,10 @@ namespace TodoApiService.Models
         public async Task<TokenResult> LoginAccount(LoginAccountCredentials loginCredentials)
         {
             Account user = _appDbContext.Accounts.FirstOrDefault(a => 
-                (loginCredentials.EmailOrPhone == a.Email || loginCredentials.EmailOrPhone == a.Phone) 
-                && a.HashPassword == loginCredentials.Password);
-            if(user == null) return null;
+                (loginCredentials.EmailOrPhone.Trim().ToLowerInvariant() == a.Email 
+                || loginCredentials.EmailOrPhone.Trim().ToLowerInvariant() == a.Phone));
+            if(user == null || !BCrypt.Net.BCrypt.Verify(loginCredentials.Password, user.HashPassword))
+                throw new SecurityTokenException("Incorrect password or this email is not registered.");
             return await GenerateJWTTokens(user);
         }
         public async Task<TokenResult> RefreshJWTTokens(string refreshToken)
@@ -92,13 +91,14 @@ namespace TodoApiService.Models
         public async Task<bool> RegisterAccount(RegisterAccountCredentials registerCredentials)
         {
             Account user = _appDbContext.Accounts
-                .FirstOrDefault(a => a.Email == registerCredentials.Email || a.Phone == registerCredentials.Phone);
-            if(user != null) return false;
+                .FirstOrDefault(a => a.Email == registerCredentials.Email.Trim().ToLowerInvariant() 
+                || a.Phone == registerCredentials.Phone.Trim().ToLowerInvariant());
+            if(user != null) throw new SecurityTokenException("This email or phone number is already in use.");
             user = new Account
             {
-                Email = registerCredentials.Email,
-                Phone = registerCredentials.Phone,
-                HashPassword = registerCredentials.Password,
+                Email = registerCredentials.Email.Trim().ToLowerInvariant(),
+                Phone = registerCredentials.Phone.Trim().ToLowerInvariant(),
+                HashPassword = BCrypt.Net.BCrypt.HashPassword(registerCredentials.Password),
                 Role = Roles.User
             };
             await _appDbContext.Accounts.AddAsync(user);

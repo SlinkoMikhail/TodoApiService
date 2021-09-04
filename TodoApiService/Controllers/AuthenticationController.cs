@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using TodoApiService.Models;
 using TodoApiService.Models.DTO.Authentication;
 
@@ -18,19 +19,27 @@ namespace TodoApiService.Controllers
         [Route("register")]
         public async Task<IActionResult> Register(RegisterAccountCredentials registerCredentials)
         {
-            if(!ModelState.IsValid) return BadRequest();
-            if(await _accountManager.RegisterAccount(registerCredentials))
-                return Ok();
-            return BadRequest();
+            try
+            {
+                return Ok(await _accountManager.RegisterAccount(registerCredentials));
+            }
+            catch (SecurityTokenException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
         [HttpPost]
         [Route("login")]
         public async Task<IActionResult> Login(LoginAccountCredentials loginCredentials)
         {
-            TokenResult result = await _accountManager.LoginAccount(loginCredentials);
-            if(result != null)
-                return Ok(result);
-            return BadRequest();
+            try
+            {
+                return Ok(await _accountManager.LoginAccount(loginCredentials));
+            }
+            catch (SecurityTokenException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
         }
         [HttpPost]
         [Route("refresh")]
