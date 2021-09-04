@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using TodoApiService.Models;
@@ -21,7 +22,8 @@ namespace TodoApiService.Controllers
         {
             try
             {
-                return Ok(await _accountManager.RegisterAccount(registerCredentials));
+                await _accountManager.RegisterAccount(registerCredentials);
+                return StatusCode(StatusCodes.Status201Created);
             }
             catch (SecurityTokenException ex)
             {

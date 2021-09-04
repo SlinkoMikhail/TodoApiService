@@ -88,7 +88,7 @@ namespace TodoApiService.Models
             return null;
         }
 
-        public async Task<bool> RegisterAccount(RegisterAccountCredentials registerCredentials)
+        public async Task RegisterAccount(RegisterAccountCredentials registerCredentials)
         {
             Account user = _appDbContext.Accounts
                 .FirstOrDefault(a => a.Email == registerCredentials.Email.Trim().ToLowerInvariant() 
@@ -103,7 +103,6 @@ namespace TodoApiService.Models
             };
             await _appDbContext.Accounts.AddAsync(user);
             await _appDbContext.SaveChangesAsync();
-            return true;
         }
 
         public Account GetAccountById(Guid id) => _appDbContext.Accounts.Find(id);
