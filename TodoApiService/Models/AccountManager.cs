@@ -3,6 +3,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using TodoApiService.Models.DTO.Authentication;
@@ -23,19 +24,16 @@ namespace TodoApiService.Models
         {
             //access_token
             TokenResult tokenResult = new TokenResult();
-            Claim[] claims = new[]
-            {
-                new Claim(ClaimNames.UniqueId, account.Id.ToString())
-            };
-            var signingCredentials = new SigningCredentials(_jwtAuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256);
-            var token = new JwtSecurityToken(
+            SigningCredentials signingCredentials = new SigningCredentials(_jwtAuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256);
+            JwtSecurityTokenHandler jwtHandler = new JwtSecurityTokenHandler();
+            JwtSecurityToken accessJWTToken = new JwtSecurityToken(
                 issuer: _jwtAuthOptions.Issuer,
-                claims: claims,
+                claims: new Claim[]{new Claim(ClaimNames.UniqueId, account.Id.ToString())},
                 audience: _jwtAuthOptions.Audience,
-                expires: DateTime.UtcNow.AddSeconds(_jwtAuthOptions.TokenLifeTime),
+                expires: DateTime.UtcNow.AddSeconds(_jwtAuthOptions.AccessTokenLifeTimeSeconds),
                 signingCredentials: signingCredentials
             );
-            tokenResult.AccessToken = new JwtSecurityTokenHandler().WriteToken(token);
+            tokenResult.AccessToken = jwtHandler.WriteToken(accessJWTToken);
             //refresh_token 
             RefreshToken refreshToken = new RefreshToken
             {
@@ -43,7 +41,7 @@ namespace TodoApiService.Models
                 IsRevoked = false,
                 IsUsed = false,
                 AddedDate = DateTime.UtcNow,
-                ExpiryDate = DateTime.UtcNow.AddMonths(6),
+                ExpiryDate = DateTime.UtcNow.AddDays(_jwtAuthOptions.RefreshTokenLifeTimeDays),
                 Account = account,
                 AccountId = account.Id
             };
@@ -61,7 +59,14 @@ namespace TodoApiService.Models
                 refreshTokenStored.Token = refreshToken.Token;
             }
             await _appDbContext.SaveChangesAsync();
-            tokenResult.RefreshToken = refreshToken.Token;
+            var refreshJWTToken = new JwtSecurityToken(
+                issuer: _jwtAuthOptions.Issuer,
+                claims: new Claim[]{new Claim(JwtRegisteredClaimNames.Jti, refreshToken.Token)},
+                audience: _jwtAuthOptions.Audience,
+                expires: refreshToken.ExpiryDate,
+                signingCredentials: signingCredentials
+            );
+            tokenResult.RefreshToken = jwtHandler.WriteToken(refreshJWTToken);
             return tokenResult;
         }
         public async Task<Account> GetAccountByIdAsync(Guid id) => await _appDbContext.Accounts.FindAsync(id);
@@ -76,16 +81,32 @@ namespace TodoApiService.Models
         }
         public async Task<TokenResult> RefreshJWTTokens(string refreshToken)
         {
-            RefreshToken refresh = _appDbContext.RefreshTokens.FirstOrDefault(t => t.Token == refreshToken);
-            if(refresh != null && refresh.ExpiryDate > DateTime.UtcNow && refresh.IsRevoked == false && refresh.IsUsed == false)
+            //валидировать рефреш - забрать гуид и найти его в бд.
+            var handler = new JwtSecurityTokenHandler();
+            var validations = new TokenValidationParameters
             {
-                refresh.IsUsed = true;
-                Account user = await _appDbContext.Accounts.FindAsync(refresh.AccountId);
+                ValidateIssuer = true,
+                ValidIssuer = _jwtAuthOptions.Issuer,
+                ValidateAudience = true,
+                ValidAudience = _jwtAuthOptions.Audience,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = _jwtAuthOptions.GetSymmetricSecurityKey(),
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero//jwtAuthOptions.ClockSkew
+            };
+            var claims = handler.ValidateToken(refreshToken, validations, out _);
+            string token = claims.FindFirstValue(JwtRegisteredClaimNames.Jti);
+            RefreshToken refreshTokenStored = await _appDbContext.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == token);
+
+            if(refreshTokenStored != null && refreshTokenStored.IsRevoked == false && refreshTokenStored.IsUsed == false)
+            {
+                refreshTokenStored.IsUsed = true;
+                Account user = await _appDbContext.Accounts.FindAsync(refreshTokenStored.AccountId);
                 TokenResult tokenResult = await this.GenerateJWTTokens(user);
                 if(tokenResult != null)
                     return tokenResult;
             }
-            return null;
+            throw new SecurityTokenException("Token is invalid");
         }
 
         public async Task RegisterAccount(RegisterAccountCredentials registerCredentials)

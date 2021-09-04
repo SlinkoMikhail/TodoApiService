@@ -47,9 +47,16 @@ namespace TodoApiService.Controllers
         [Route("refresh")]
         public async Task<IActionResult> Refresh(TokenRequest token)
         {
-            TokenResult result = await _accountManager.RefreshJWTTokens(token.RefreshToken);
-            if(result == null) return BadRequest();
-            return Ok(result);
+            try
+            {
+                TokenResult result = await _accountManager.RefreshJWTTokens(token.RefreshToken);
+                return Ok(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            
         }
     }
 }
