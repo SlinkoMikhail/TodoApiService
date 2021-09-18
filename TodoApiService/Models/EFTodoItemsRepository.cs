@@ -17,25 +17,17 @@ namespace TodoApiService.Models
 
         public async Task AddTodoItem(Guid userId, CreateTodoItem item)
         {
-            if(item.AccountId == userId)
-            { 
-                TodoItem todoItem = new TodoItem
-                {
-                    Id = 0,
-                    AccountId = item.AccountId,
-                    Description = item.Description,
-                    IsComplete = item.IsComplete,
-                    IsImportant = item.IsImportant,
-                    Title = item.Title
-                };
-                await _appDbContext.TodoItems.AddAsync(todoItem);
-                await _appDbContext.SaveChangesAsync();
-            }
-            else
+            TodoItem todoItem = new TodoItem
             {
-                //exception о том, что не соответсует idшки
-                throw new Exception("The Id of the authenticated user does not match the Id of the user who performs the action.");
-            }
+                Id = 0,
+                AccountId = userId,
+                Description = item.Description,
+                IsComplete = item.IsComplete,
+                IsImportant = item.IsImportant,
+                Title = item.Title
+            };
+            await _appDbContext.TodoItems.AddAsync(todoItem);
+            await _appDbContext.SaveChangesAsync();
         }
 
         public async Task DeleteTodoItem(Guid userId, long todoItemId)

@@ -19,6 +19,8 @@ namespace TodoApiService.Controllers
         }
         [HttpPost]
         [Route("register")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Register(RegisterAccountCredentials registerCredentials)
         {
             try
@@ -33,6 +35,8 @@ namespace TodoApiService.Controllers
         }
         [HttpPost]
         [Route("login")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Login(LoginAccountCredentials loginCredentials)
         {
             try
@@ -46,6 +50,8 @@ namespace TodoApiService.Controllers
         }
         [HttpPost]
         [Route("refresh")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Refresh(TokenRequest token)
         {
             try
@@ -60,6 +66,8 @@ namespace TodoApiService.Controllers
         [HttpPost]
         [Authorize]
         [Route("logout")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> LogoutUserSession()
         {
             await _accountManager.LogoutSession(HttpContext.User);
@@ -67,6 +75,8 @@ namespace TodoApiService.Controllers
         }
         [HttpPost]
         [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [Route("logoutall")]
         public async Task<IActionResult> LogoutUserAllSessions()
         {

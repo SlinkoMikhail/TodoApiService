@@ -7,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 using TodoApiService.Extensions;
 using TodoApiService.Models;
 using TodoApiService.Models.Options;
+using Microsoft.OpenApi.Models;
 
 namespace TodoApiService
 {
@@ -24,7 +25,10 @@ namespace TodoApiService
             {
                 options.UseSqlServer(Configuration.GetConnectionString("TodoApiApplicationDb"));
             });
-
+            services.AddSwaggerGen(options => 
+            {
+                options.SwaggerDoc("v1", new OpenApiInfo { Title = "TodoAPI", Version = "v1"});
+            });
             var jwtConfig = Configuration.GetSection("JWTAuthOptions");
             services.Configure<JWTAuthOptions>(jwtConfig);
 
@@ -49,6 +53,11 @@ namespace TodoApiService
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+            });
+            app.UseSwagger();
+            app.UseSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint("/swagger/v1/swagger.json", "TodoAPI");
             });
         }
     }

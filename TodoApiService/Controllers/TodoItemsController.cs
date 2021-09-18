@@ -7,12 +7,15 @@ using TodoApiService.Extensions;
 using TodoApiService.Models.DTO;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using TodoApiService.Filters;
 
 namespace TodoApiService.Controllers
 {
     [ApiController]
     [Route("api/todoitems")]
     [Authorize]
+    [AssignSession]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public class TodoItemsController : ControllerBase
     {
         private readonly ITodoItemsRepository _todoItemsRepository;
@@ -22,14 +25,14 @@ namespace TodoApiService.Controllers
             _todoItemsRepository = todoItemsRepository;
             _logger = logger;
         }
-        //GET all items
         [HttpGet]
         public IAsyncEnumerable<TodoItem> GetTodoItems()
         {
             return _todoItemsRepository.GetAll(User.GetAccountId());
         }
-        //POST(TodoItem) add(TodoItems)
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> AddTodoItem(CreateTodoItem createTodoItem)
         {
             try
@@ -45,8 +48,9 @@ namespace TodoApiService.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        //UPDATE(arr TodoIems)
         [HttpPut]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> UpdateTodoItems(EditTodoItem todoItem)
         {
             try
@@ -60,8 +64,8 @@ namespace TodoApiService.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        //DELETE(id) remove(id)
         [HttpDelete("{todoItemId}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<IActionResult> DeleteTodoItem(long todoItemId)
         {
             try
