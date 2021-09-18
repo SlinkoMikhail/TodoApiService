@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using TodoApiService.Extensions;
 using TodoApiService.Models.DTO.Authentication;
 using TodoApiService.Models.Options;
 
@@ -20,15 +21,20 @@ namespace TodoApiService.Models
             _jwtAuthOptions = jwtAuthOptions.Value;
             _appDbContext = appDbContext;
         }
-        private async Task<TokenResult> GenerateJWTTokens(Account account)
+        private async Task<TokenResult> GenerateJWTTokens(Session session)
         {
             //access_token
             TokenResult tokenResult = new TokenResult();
             SigningCredentials signingCredentials = new SigningCredentials(_jwtAuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256);
             JwtSecurityTokenHandler jwtHandler = new JwtSecurityTokenHandler();
+            Claim[] claims = new Claim[]
+            {
+                new Claim(ClaimNames.UniqueId, session.AccountId.ToString()),
+                new Claim(ClaimNames.SessionId, session.Id.ToString())
+            };
             JwtSecurityToken accessJWTToken = new JwtSecurityToken(
                 issuer: _jwtAuthOptions.Issuer,
-                claims: new Claim[]{new Claim(ClaimNames.UniqueId, account.Id.ToString())},
+                claims: claims,
                 audience: _jwtAuthOptions.Audience,
                 expires: DateTime.UtcNow.AddSeconds(_jwtAuthOptions.AccessTokenLifeTimeSeconds),
                 signingCredentials: signingCredentials
@@ -39,13 +45,12 @@ namespace TodoApiService.Models
             {
                 Token = Guid.NewGuid().ToString(),
                 IsRevoked = false,
-                IsUsed = false,
                 AddedDate = DateTime.UtcNow,
                 ExpiryDate = DateTime.UtcNow.AddDays(_jwtAuthOptions.RefreshTokenLifeTimeDays),
-                Account = account,
-                AccountId = account.Id
+                Session = session,
+                SessionId = session.Id
             };
-            RefreshToken refreshTokenStored = _appDbContext.RefreshTokens.FirstOrDefault(t => t.AccountId == account.Id);
+            RefreshToken refreshTokenStored = _appDbContext.RefreshTokens.FirstOrDefault(t => t.Session.Id == session.Id);
             if(refreshTokenStored == null)
             {
                 await _appDbContext.RefreshTokens.AddAsync(refreshToken);
@@ -55,13 +60,12 @@ namespace TodoApiService.Models
                 refreshTokenStored.AddedDate = refreshToken.AddedDate;
                 refreshTokenStored.ExpiryDate = refreshToken.ExpiryDate;
                 refreshTokenStored.IsRevoked = refreshToken.IsRevoked;
-                refreshTokenStored.IsUsed = refreshToken.IsUsed;
                 refreshTokenStored.Token = refreshToken.Token;
             }
             await _appDbContext.SaveChangesAsync();
             var refreshJWTToken = new JwtSecurityToken(
                 issuer: _jwtAuthOptions.Issuer,
-                claims: new Claim[]{new Claim(JwtRegisteredClaimNames.Jti, refreshToken.Token)},
+                claims: claims.Append(new Claim(JwtRegisteredClaimNames.Jti, refreshToken.Token)),
                 audience: _jwtAuthOptions.Audience,
                 expires: refreshToken.ExpiryDate,
                 signingCredentials: signingCredentials
@@ -69,6 +73,7 @@ namespace TodoApiService.Models
             tokenResult.RefreshToken = jwtHandler.WriteToken(refreshJWTToken);
             return tokenResult;
         }
+        public Account GetAccountById(Guid id) => _appDbContext.Accounts.Find(id);
         public async Task<Account> GetAccountByIdAsync(Guid id) => await _appDbContext.Accounts.FindAsync(id);
         public async Task<TokenResult> LoginAccount(LoginAccountCredentials loginCredentials)
         {
@@ -77,13 +82,34 @@ namespace TodoApiService.Models
                 || loginCredentials.EmailOrPhone.Trim().ToLowerInvariant() == a.Phone));
             if(user == null || !BCrypt.Net.BCrypt.Verify(loginCredentials.Password, user.HashPassword))
                 throw new SecurityTokenException("Incorrect password or this email is not registered.");
-            return await GenerateJWTTokens(user);
+            Session session = new Session
+            {
+                Account = user,
+                AccountId = user.Id,
+            };
+            await _appDbContext.Sessions.AddAsync(session);
+            await _appDbContext.SaveChangesAsync();
+            return await GenerateJWTTokens(session);
         }
         public async Task<TokenResult> RefreshJWTTokens(string refreshToken)
         {
-            //валидировать рефреш - забрать гуид и найти его в бд.
-            var handler = new JwtSecurityTokenHandler();
-            var validations = new TokenValidationParameters
+            var (accountId, sessionId, refresh) = ValidateAndExtractValuesFromRefreshToken(refreshToken);
+            RefreshToken refreshTokenStored = await _appDbContext.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refresh.ToString());
+            if(refreshTokenStored == null || refreshTokenStored.IsRevoked || refreshTokenStored.SessionId != sessionId)
+            {
+                throw new SecurityTokenException("Token is invalid.");
+            }
+            Session session = await _appDbContext.Sessions.FirstOrDefaultAsync(s => s.Id == sessionId);
+            if(session == null || session.AccountId != accountId)
+            {
+                throw new SecurityTokenException("Token is invalid");
+            }
+            return await this.GenerateJWTTokens(session);
+        }
+        private (Guid accountId, Guid sessionId, Guid refresh) ValidateAndExtractValuesFromRefreshToken(string refreshToken)
+        {
+            JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
+            TokenValidationParameters validations = new TokenValidationParameters
             {
                 ValidateIssuer = true,
                 ValidIssuer = _jwtAuthOptions.Issuer,
@@ -92,21 +118,17 @@ namespace TodoApiService.Models
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = _jwtAuthOptions.GetSymmetricSecurityKey(),
                 ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero//jwtAuthOptions.ClockSkew
+                ClockSkew = _jwtAuthOptions.ClockSkew
             };
-            var claims = handler.ValidateToken(refreshToken, validations, out _);
-            string token = claims.FindFirstValue(JwtRegisteredClaimNames.Jti);
-            RefreshToken refreshTokenStored = await _appDbContext.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == token);
-
-            if(refreshTokenStored != null && refreshTokenStored.IsRevoked == false && refreshTokenStored.IsUsed == false)
+            ClaimsPrincipal claims = handler.ValidateToken(refreshToken, validations, out _);
+            Guid refresh = claims.GetRefresh();
+            Guid accoutId = claims.GetAccountId();
+            Guid sessionId = claims.GetSessionId();
+            if(refresh == default || accoutId == default || sessionId == default)
             {
-                refreshTokenStored.IsUsed = true;
-                Account user = await _appDbContext.Accounts.FindAsync(refreshTokenStored.AccountId);
-                TokenResult tokenResult = await this.GenerateJWTTokens(user);
-                if(tokenResult != null)
-                    return tokenResult;
+                throw new SecurityTokenException("Token hasn't got required claims");
             }
-            throw new SecurityTokenException("Token is invalid");
+            return(accoutId, sessionId, refresh);
         }
 
         public async Task RegisterAccount(RegisterAccountCredentials registerCredentials)
@@ -126,6 +148,29 @@ namespace TodoApiService.Models
             await _appDbContext.SaveChangesAsync();
         }
 
-        public Account GetAccountById(Guid id) => _appDbContext.Accounts.Find(id);
+        public async Task LogoutSession(ClaimsPrincipal claims)
+        {
+            Guid sessionId = claims.GetSessionId();
+            if(sessionId != default)
+            {
+                Session session = await _appDbContext.Sessions.FindAsync(sessionId);
+                if(session.AccountId == claims.GetAccountId())
+                {
+                    _appDbContext.Sessions.Remove(session);
+                    await _appDbContext.SaveChangesAsync();
+                }
+            }
+        }
+
+        public async Task LogoutAllSessions(ClaimsPrincipal claims)
+        {
+            Guid userId = claims.GetAccountId();
+            if(userId != default)
+            {
+                Session[] userSessions = await _appDbContext.Sessions.Where(s => s.AccountId == userId).ToArrayAsync();
+                _appDbContext.Sessions.RemoveRange(userSessions);
+                await _appDbContext.SaveChangesAsync();
+            }
+        }
     }
 }

@@ -31,7 +31,7 @@ namespace TodoApiService.Extensions
             
                         ValidateLifetime = true,
                         
-                        ClockSkew = TimeSpan.Zero//jwtAuthOptions.ClockSkew
+                        ClockSkew = jwtAuthOptions.ClockSkew
                     };
                 });
         }

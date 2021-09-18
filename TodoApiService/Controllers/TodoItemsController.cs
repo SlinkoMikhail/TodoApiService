@@ -26,7 +26,7 @@ namespace TodoApiService.Controllers
         [HttpGet]
         public IAsyncEnumerable<TodoItem> GetTodoItems()
         {
-            return _todoItemsRepository.GetAll(User.GetUserId());
+            return _todoItemsRepository.GetAll(User.GetAccountId());
         }
         //POST(TodoItem) add(TodoItems)
         [HttpPost]
@@ -34,7 +34,7 @@ namespace TodoApiService.Controllers
         {
             try
             {
-                await _todoItemsRepository.AddTodoItem(User.GetUserId(), createTodoItem);
+                await _todoItemsRepository.AddTodoItem(User.GetAccountId(), createTodoItem);
                 return StatusCode(StatusCodes.Status201Created);
             }
             catch (System.Exception ex)
@@ -51,7 +51,7 @@ namespace TodoApiService.Controllers
         {
             try
             {
-                await _todoItemsRepository.UpdateTodoItems(User.GetUserId(), todoItem);             
+                await _todoItemsRepository.UpdateTodoItems(User.GetAccountId(), todoItem);             
                 return NoContent();
             }
             catch (System.Exception ex)
@@ -66,7 +66,7 @@ namespace TodoApiService.Controllers
         {
             try
             {
-                await _todoItemsRepository.DeleteTodoItem(User.GetUserId(), todoItemId);
+                await _todoItemsRepository.DeleteTodoItem(User.GetAccountId(), todoItemId);
             }
             catch (System.Exception ex)
             {

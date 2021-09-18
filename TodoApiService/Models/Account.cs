@@ -12,6 +12,6 @@ namespace TodoApiService.Models
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public ICollection<TodoItem> TodoItems { get; set; }
-        public RefreshToken Token { get; set; }
+        public ICollection<Session> Sessions { get; set; }
     }
 }

@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -49,14 +50,28 @@ namespace TodoApiService.Controllers
         {
             try
             {
-                TokenResult result = await _accountManager.RefreshJWTTokens(token.RefreshToken);
-                return Ok(result);
+                return Ok(await _accountManager.RefreshJWTTokens(token.RefreshToken));
             }
-            catch (System.Exception ex)
+            catch (SecurityTokenException ex)
             {
                 return BadRequest(ex.Message);
             }
-            
+        }
+        [HttpPost]
+        [Authorize]
+        [Route("logout")]
+        public async Task<IActionResult> LogoutUserSession()
+        {
+            await _accountManager.LogoutSession(HttpContext.User);
+            return Ok();
+        }
+        [HttpPost]
+        [Authorize]
+        [Route("logoutall")]
+        public async Task<IActionResult> LogoutUserAllSessions()
+        {
+            await _accountManager.LogoutAllSessions(HttpContext.User);
+            return Ok();
         }
     }
 }
