@@ -1,10 +1,8 @@
 using System;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
-using TodoApiService.Controllers;
 using TodoApiService.Extensions;
 using TodoApiService.Models;
 
@@ -14,10 +12,10 @@ namespace TodoApiService.Filters
     {
         public override void OnActionExecuting(ActionExecutingContext context)
         {
-            var dbContext = context.HttpContext.RequestServices.GetRequiredService<TodoApiApplicationContext>();
-            if(!(context.Controller is TodoItemsController controller))
+            TodoApiApplicationContext dbContext = context.HttpContext.RequestServices.GetRequiredService<TodoApiApplicationContext>();
+            if(context.HttpContext.User == null)
             {
-                throw new InvalidOperationException($"Контролёр должен наследоваться от {nameof(TodoItemsController)}");
+                context.Result = new UnauthorizedResult();
             }
             Guid accountId = context.HttpContext.User.GetAccountId();
             Guid sessionId = context.HttpContext.User.GetSessionId();

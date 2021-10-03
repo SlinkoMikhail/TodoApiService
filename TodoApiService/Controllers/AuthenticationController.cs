@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
+using TodoApiService.Filters;
 using TodoApiService.Models;
 using TodoApiService.Models.DTO.Authentication;
 
@@ -23,15 +23,8 @@ namespace TodoApiService.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Register(RegisterAccountCredentials registerCredentials)
         {
-            try
-            {
-                await _accountManager.RegisterAccount(registerCredentials);
-                return StatusCode(StatusCodes.Status201Created);
-            }
-            catch (SecurityTokenException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            await _accountManager.RegisterAccount(registerCredentials);
+            return StatusCode(StatusCodes.Status201Created);
         }
         [HttpPost]
         [Route("login")]
@@ -39,14 +32,7 @@ namespace TodoApiService.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Login(LoginAccountCredentials loginCredentials)
         {
-            try
-            {
-                return Ok(await _accountManager.LoginAccount(loginCredentials));
-            }
-            catch (SecurityTokenException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
+            return Ok(await _accountManager.LoginAccount(loginCredentials));
         }
         [HttpPost]
         [Route("refresh")]
@@ -54,14 +40,7 @@ namespace TodoApiService.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Refresh(TokenRequest token)
         {
-            try
-            {
-                return Ok(await _accountManager.RefreshJWTTokens(token.RefreshToken));
-            }
-            catch (SecurityTokenException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            return Ok(await _accountManager.RefreshJWTTokens(token.RefreshToken));
         }
         [HttpPost]
         [Authorize]

@@ -8,6 +8,7 @@ using TodoApiService.Extensions;
 using TodoApiService.Models;
 using TodoApiService.Models.Options;
 using Microsoft.OpenApi.Models;
+using Microsoft.Extensions.Logging;
 
 namespace TodoApiService
 {
@@ -43,6 +44,7 @@ namespace TodoApiService
             {
                 app.UseDeveloperExceptionPage();
             }
+            app.UseExceptionsHandling();
 
             app.UseRouting();
 

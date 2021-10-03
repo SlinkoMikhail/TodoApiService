@@ -23,13 +23,14 @@ namespace TodoApiService.Models
         }
         private async Task<TokenResult> GenerateJWTTokens(Session session)
         {
+            if(session == null) throw new ArgumentNullException("Session can't be null.");
             //access_token
             TokenResult tokenResult = new TokenResult();
             SigningCredentials signingCredentials = new SigningCredentials(_jwtAuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256);
             JwtSecurityTokenHandler jwtHandler = new JwtSecurityTokenHandler();
             Claim[] claims = new Claim[]
             {
-                new Claim(ClaimNames.UniqueId, session.AccountId.ToString()),
+                new Claim(ClaimNames.AccountId, session.AccountId.ToString()),
                 new Claim(ClaimNames.SessionId, session.Id.ToString())
             };
             JwtSecurityToken accessJWTToken = new JwtSecurityToken(
@@ -50,7 +51,7 @@ namespace TodoApiService.Models
                 Session = session,
                 SessionId = session.Id
             };
-            RefreshToken refreshTokenStored = _appDbContext.RefreshTokens.FirstOrDefault(t => t.Session.Id == session.Id);
+            RefreshToken refreshTokenStored = await _appDbContext.RefreshTokens.FirstOrDefaultAsync(rt => rt.Session.Id == session.Id);
             if(refreshTokenStored == null)
             {
                 await _appDbContext.RefreshTokens.AddAsync(refreshToken);
@@ -65,7 +66,7 @@ namespace TodoApiService.Models
             await _appDbContext.SaveChangesAsync();
             var refreshJWTToken = new JwtSecurityToken(
                 issuer: _jwtAuthOptions.Issuer,
-                claims: claims.Append(new Claim(JwtRegisteredClaimNames.Jti, refreshToken.Token)),
+                claims: claims.Append(new Claim(ClaimNames.RefreshBase, refreshToken.Token)),
                 audience: _jwtAuthOptions.Audience,
                 expires: refreshToken.ExpiryDate,
                 signingCredentials: signingCredentials
@@ -77,7 +78,7 @@ namespace TodoApiService.Models
         public async Task<Account> GetAccountByIdAsync(Guid id) => await _appDbContext.Accounts.FindAsync(id);
         public async Task<TokenResult> LoginAccount(LoginAccountCredentials loginCredentials)
         {
-            Account user = _appDbContext.Accounts.FirstOrDefault(a => 
+            Account user = await _appDbContext.Accounts.FirstOrDefaultAsync(a => 
                 (loginCredentials.EmailOrPhone.Trim().ToLowerInvariant() == a.Email 
                 || loginCredentials.EmailOrPhone.Trim().ToLowerInvariant() == a.Phone));
             if(user == null || !BCrypt.Net.BCrypt.Verify(loginCredentials.Password, user.HashPassword))
@@ -150,26 +151,33 @@ namespace TodoApiService.Models
 
         public async Task LogoutSession(ClaimsPrincipal claims)
         {
+            if(claims == null) throw new ArgumentNullException("Claims can't be null");
             Guid sessionId = claims.GetSessionId();
-            if(sessionId != default)
+            Session session = await _appDbContext.Sessions.FindAsync(sessionId);
+            if(session.AccountId == claims.GetAccountId())
             {
-                Session session = await _appDbContext.Sessions.FindAsync(sessionId);
-                if(session.AccountId == claims.GetAccountId())
-                {
-                    _appDbContext.Sessions.Remove(session);
-                    await _appDbContext.SaveChangesAsync();
-                }
+                _appDbContext.Sessions.Remove(session);
+                await _appDbContext.SaveChangesAsync();
+            }
+            else
+            {
+                throw new SecurityTokenException("User session not found."); 
             }
         }
 
         public async Task LogoutAllSessions(ClaimsPrincipal claims)
         {
+            if(claims == null) throw new ArgumentNullException("Claims can't be null");
             Guid userId = claims.GetAccountId();
             if(userId != default)
             {
                 Session[] userSessions = await _appDbContext.Sessions.Where(s => s.AccountId == userId).ToArrayAsync();
                 _appDbContext.Sessions.RemoveRange(userSessions);
                 await _appDbContext.SaveChangesAsync();
+            }
+            else
+            {
+                throw new SecurityTokenException("User sessions not found.");
             }
         }
     }

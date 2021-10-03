@@ -12,11 +12,11 @@ namespace TodoApiService
         {
             
             Log.Logger = new LoggerConfiguration()
-                .WriteTo.Console()
-                .WriteTo.File(new JsonFormatter(), "Logs/log.json",
+                .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Warning)
+                /*.WriteTo.File(new JsonFormatter(), "Logs/log.json",
                                 restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information,
                                 rollingInterval : RollingInterval.Day)
-                .WriteTo.File(new JsonFormatter(), "Logs/errors.json", restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Error)
+                .WriteTo.File(new JsonFormatter(), "Logs/errors.json", restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Error)*/
                 .CreateLogger();
             try
             {

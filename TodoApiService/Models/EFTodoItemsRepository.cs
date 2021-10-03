@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using TodoApiService.Models.DTO;
 
 namespace TodoApiService.Models
@@ -41,7 +42,7 @@ namespace TodoApiService.Models
             else
             {
                 //exception о том, что не соответсует idшки
-                throw new Exception("The Id of the authenticated user does not match the Id of the user who performs the action.");
+                throw new SecurityTokenException("The Id of the authenticated user does not match the Id of the user who performs the action.");
             }
         }
 
@@ -64,7 +65,7 @@ namespace TodoApiService.Models
             else
             {
                 //exception о том, что не найдено такой задачи для апдейта
-                throw new Exception("The Id of the authenticated user does not match the Id of the user who performs the action.");
+                throw new SecurityTokenException("The Id of the authenticated user does not match the Id of the user who performs the action.");
             }
         }
     }
