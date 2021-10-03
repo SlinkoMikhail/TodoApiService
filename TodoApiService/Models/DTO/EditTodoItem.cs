@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace TodoApiService.Models.DTO
 {
     public class EditTodoItem
